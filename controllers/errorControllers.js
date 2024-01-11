@@ -11,10 +11,10 @@ const sendErrorDev = (err, res) => {
 const sendErrorProd = (err, res) => {
   //operationalError , trusted error and send msg to client
   if (err.isOperational) {
-    console.log(`==============`,err.message)
+    console.log(`=======~=======`,err.msg)
     res.status(err.statusCode).json({
       status: err.status,
-      message: err.message,
+      message: err.msg,extra:"extra",
     });
     //Programming error or other unknown error dont want to leak the details to the client
   } else {
@@ -56,6 +56,7 @@ module.exports = (err, req, res, next) => {
 
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
+  err.msg=err.message||'ERROR!!!';
   // return res.status(404).json({
   //   err:err
   // });
@@ -63,6 +64,8 @@ module.exports = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
   } else if (process.env.NODE_ENV === 'production') {
+
+    // return res.status(401).json({message:err.message});
     //all props are not duplicated here
      let error = { ...err };// -->only shallow copy not deep copy
 
@@ -73,8 +76,9 @@ module.exports = (err, req, res, next) => {
     //   error:err,
     //   erro2:error
     // }));
-    console.log(err,error)
-     console.log(`ERROR-msg : `, error.message);
+    console.log({...err},error);
+     console.log(`ERROR-msg : `, error.msg);
+    
     if (error.kind === 'ObjectId') {
       // console.log(`ERRORname : `, error.name);
       error = handleCastErrorDB(error);

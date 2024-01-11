@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -15,6 +16,11 @@ const UserSchema = new mongoose.Schema({
     trim: true,
     unique: true,
     validate: [validator.isEmail, 'please provide a valid email-id'],
+  },
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user',
   },
   password: {
     type: String,
@@ -33,23 +39,25 @@ const UserSchema = new mongoose.Schema({
       message: 'passwords are not the same',
     },
   },
-  passwordChangedAt:{
-    type:Date
+  passwordChangedAt: {
+    type: Date,
   },
+  passwordResetToken: String,
+  PasswordResetExpires: Date,
   photo: {
     type: String,
   },
-//   methods:{
+  //   methods:{
 
-//      async correctPassword(
-//         candidatePassword,
-//         userPassword
-//       ) {
-//         // this.password wont work as we set select:false thats why we take userpassword also
-//         return await bcrypt.compare(candidatePassword, userPassword);
-//       }
+  //      async correctPassword(
+  //         candidatePassword,
+  //         userPassword
+  //       ) {
+  //         // this.password wont work as we set select:false thats why we take userpassword also
+  //         return await bcrypt.compare(candidatePassword, userPassword);
+  //       }
 
-//   }
+  //   }
 });
 
 //PRE-SAVE-MIDDLEWARE on User model
@@ -74,19 +82,35 @@ UserSchema.methods.correctPassword = async function (
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-UserSchema.methods.changedPasswordAfter= function(JWTTimestamp){
-  if(this.passwordChangedAt){
-    const changedTimeStamp=parseInt(this.passwordChangedAt.getTime()/1000,10);
-    console.log('COMPARE TIMESTAMP',JWTTimestamp,changedTimeStamp);
-    return (
-      JWTTimestamp<changedTimeStamp
+UserSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimeStamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
     );
+    console.log('COMPARE TIMESTAMP', JWTTimestamp, changedTimeStamp);
+    return JWTTimestamp < changedTimeStamp;
   }
-  console.log('5555555555555555555555555555555555')
+  console.log('5555555555555555555555555555555555');
   //FALSE means not changed
   return false;
-
 };
+
+//Password Reset
+UserSchema.methods.createPasswordResetToken = function () {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  this.passwordResetToken=crypto.createHash('sha256').update(resetToken).digest('hex');
+  console.log({resetToken:resetToken,passwordResetToken:this.passwordResetToken})
+  this.PasswordResetExpires=Date.now()+10*60*1000; //10 mins validity
+  return resetToken;
+};
+
+UserSchema.pre('save',function(next){
+  if(!this.isModified('password') || this.isNew) return next();
+
+  this.passwordChangedAt=Date.now()-1000;//database save is slower
+  next();
+});
 
 const User = mongoose.model('User', UserSchema);
 module.exports = User;
