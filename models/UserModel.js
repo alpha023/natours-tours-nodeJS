@@ -9,13 +9,18 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'User Must have a name'],
     trim: true,
   },
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
   email: {
     type: String,
     required: [true, 'user must have a valid email ID'],
     lowercase: true,
     trim: true,
     unique: true,
-    validate: [validator.isEmail, 'please provide a valid email-id'],
+    validate: [validator.isEmail,'please provide a valid email-id'],
   },
   role: {
     type: String,
@@ -72,6 +77,14 @@ UserSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
 });
 
+//any query find || findById || findByIdAndUpdate ....
+//Query Middle Ware...
+UserSchema.pre(/^find/, function (next) {
+  //this points to the current query object
+  this.find({ active: {$ne:false} });
+  next();
+});
+
 //INSTANCE METHOD
 //available to all the docs of certain collection
 UserSchema.methods.correctPassword = async function (
@@ -99,16 +112,22 @@ UserSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
 //Password Reset
 UserSchema.methods.createPasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString('hex');
-  this.passwordResetToken=crypto.createHash('sha256').update(resetToken).digest('hex');
-  console.log({resetToken:resetToken,passwordResetToken:this.passwordResetToken})
-  this.PasswordResetExpires=Date.now()+10*60*1000; //10 mins validity
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  console.log({
+    resetToken: resetToken,
+    passwordResetToken: this.passwordResetToken,
+  });
+  this.PasswordResetExpires = Date.now() + 10 * 60 * 1000; //10 mins validity
   return resetToken;
 };
 
-UserSchema.pre('save',function(next){
-  if(!this.isModified('password') || this.isNew) return next();
+UserSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next();
 
-  this.passwordChangedAt=Date.now()-1000;//database save is slower
+  this.passwordChangedAt = Date.now() - 1000; //database save is slower
   next();
 });
 

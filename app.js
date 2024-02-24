@@ -1,15 +1,56 @@
 const express = require('express');
 const morgan = require('morgan');
+const rateLimit=require('express-rate-limit');
+const helmet=require('helmet');
+const mongoSanitize=require('express-mongo-sanitize');
+const xss=require('xss-clean');
+const hpp=require('hpp');
 const AppError=require('./utils/appError');
 const globalErrorHandler=require('./controllers/errorControllers');
 const app = express();
 
-//iss middleware ke bina req.body se json data retrieve nhi krr skte h
-app.use(express.json());
+//Secure http headers by using helmet package
+app.use(helmet());
 
+
+//iss middleware ke bina req.body se json data retrieve nhi krr skte h
+app.use(express.json({limit:'10kb'})); //body larger than 10KB will not be accepted any more
+
+//Data Sanitization agains NoSQL query injection
+//withput email but with password anyy one can log in it
+app.use(mongoSanitize());
+
+//Data sanitization against XSS
+app.use(xss());
+
+//PREVENT PARAMETER POLLUTION
+app.use(hpp({
+  whitelist:[
+    'duration','ratingsQuantity','maxGroupSize','difficulty','ratingsAverage','price'
+  ]
+}));
+
+
+//Serving the static files
+app.use(express.static(`${__dirname}/public`));
+
+
+// GLOBAL MIDDLEWARES
 app.use(morgan('dev'));
+// ++++++++++++++++++++++++++++++++==
+//to avoid brute-force-attack denial-of-service
+//limit requests from same api
+const limiter=rateLimit({
+  max:100,
+  windowMs:60*60*1000, //maximum requests in one hour from the same IP
+  message:"Too many requests from this IP, please try again in one hour..."
+});
+app.use('/api',limiter);
+
+//++++++++++++++++++++++++++++++++++
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter=require('./routes/reviewRoutes');
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
@@ -19,6 +60,7 @@ app.use((req, res, next) => {
 //mounting the routers to a particular routes
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews',reviewRouter);
 
 //this middle will be executed last after all other routes are checked
 app.all('*', (req, res, next) => {

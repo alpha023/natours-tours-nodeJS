@@ -14,7 +14,7 @@ mongoose
     console.log('Mongo Connected Success Fully');
   });
 
-const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf-8'));
+const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours.json`, 'utf-8'));
 
 //IMPORT DATA INTO MONGO DB
 const importData = async () => {
