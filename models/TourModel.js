@@ -124,6 +124,12 @@ const TourSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+//INDEXING on PRICE FIELD FOR FASTER ACCESS OF THE QUERY ON THE PRICE
+//INDEX ARE WAY BIGGER THAN DOCUMENT SIZE DONT PUT INDEX FOR EVERY FIELD 
+//using our application accessing pattern
+TourSchema.index({price:1,ratingsAverage:-1}); // 1===Increaseing Order -1 for decreasing order
+TourSchema.index({slug:1});
+
 TourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });

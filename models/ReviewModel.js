@@ -52,6 +52,29 @@ ReviewSchema.pre(/^find/,function(next){
 
 //SOLUTION : Virtual Populate
 
+//STATIC METHODS ON THE MODEL
+ReviewSchema.statics.calcAverageRatings=async function(tourId){
+    const stats=await this.aggregate([
+        {
+            $match:{tour:tourId}
+        },{
+            $group:{
+                _id:'$tour',
+                nRating:{$sum:1},
+                avgRating:{$avg:'$rating'}
+            }
+        }
+    ]);
+    console.log(stats);
+}
+
+ReviewSchema.pre('save',function(next){
+    //this points to current review
+    // Review.calcAverageRatings(this.tour);
+
+    this.constructor.calcAverageRatings(this.tour);
+    next();
+});
 const Review=mongoose.model('Review',ReviewSchema);
 module.exports=Review;
 

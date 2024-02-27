@@ -2,14 +2,14 @@ const express = require('express');
 const tourController = require('./../controllers/tourControllers');
 const router = express.Router();
 const authControllers = require('./../controllers/authControllers');
-const reviewRouter=require('./../routes/reviewRoutes');
+const reviewRouter = require('./../routes/reviewRoutes');
 
 //param middleware only run for tour toutes.e
 // : /api/v1/tours/:id
 //router.param('id',tourController.checkID);
 
 //Nested Route
-  //POST /tour/32uehfuefuyegfe5wegwugfTOURID4d/review
+//POST /tour/32uehfuefuyegfe5wegwugfTOURID4d/review
 //GET /tour/4683hegfhegfehf48743trhegf/review
 //nested ROUTE
 
@@ -26,7 +26,7 @@ const reviewRouter=require('./../routes/reviewRoutes');
 
 //
 
-router.use('/:tourId/reviews',reviewRouter);
+router.use('/:tourId/reviews', reviewRouter);
 
 // : /api/v1/tours
 router
@@ -36,22 +36,35 @@ router
   .route('/top-5-expensive')
   .get(tourController.aliasTopExpensiveTours, tourController.getAllTours);
 router.route('/tour-stats').get(tourController.getTourStats);
-router.route('/monthly-plan/:year').get(tourController.getMonthlyPlan);
+router
+  .route('/monthly-plan/:year')
+  .get(
+    authControllers.protect,
+    authControllers.restrictTo('admin', 'lead-guide', 'guide'),
+    tourController.getMonthlyPlan
+  );
 router
   .route('/')
-  .get(authControllers.protect, tourController.getAllTours)
-  .post(tourController.createTour);
+  .get(tourController.getAllTours)
+  .post(
+    authControllers.protect,
+    authControllers.restrictTo('admin', 'lead-guide'),
+    tourController.createTour
+  );
 
 //ROUTE: /api/v1/tours/:id
 router
   .route('/:id')
   .get(tourController.getTour)
-  .patch(tourController.updateTour)
+  .patch(
+    authControllers.protect,
+    authControllers.restrictTo('admin', 'lead-guide'),
+    tourController.updateTour
+  )
   .delete(
     authControllers.protect,
     authControllers.restrictTo('admin', 'lead-guide'),
     tourController.deleteTour
   );
-
 
 module.exports = router;
