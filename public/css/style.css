@@ -599,6 +599,10 @@ body {
   );
 }
 
+::-webkit-scrollbar {
+  display: none;
+}
+
 .reviews {
   padding: 5rem 0;
   display: grid;
@@ -830,6 +834,8 @@ body {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
+  justify-content: flex-end;
+  column-gap: 16px;
 }
 .footer__nav li {
   margin-left: 1.5rem;

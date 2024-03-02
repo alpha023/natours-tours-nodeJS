@@ -1,9 +1,9 @@
 // const fs = require('fs');
 const Tour = require('./../models/TourModel');
 const APIFeatures = require('./../utils/apiFeatures');
-const catchAsync=require('./../utils/catchAsync');
-const AppError=require('./../utils/appError');
-const factory=require('./handlerFactory');
+const catchAsync = require('./../utils/catchAsync');
+const AppError = require('./../utils/appError');
+const factory = require('./handlerFactory');
 // const tours = JSON.parse(
 //   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
 // );
@@ -18,7 +18,7 @@ const factory=require('./handlerFactory');
 //   next();
 // };
 //===================================
-exports.getAllTours=factory.getAll(Tour);
+exports.getAllTours = factory.getAll(Tour);
 // exports.getAllTours = catchAsync(async (req, res,next) => {
 //   // try {
 //     // console.log(req.query);
@@ -116,7 +116,7 @@ exports.getAllTours=factory.getAll(Tour);
 //   // }
 // });
 //==========================================================
-exports.createTour=factory.createOne(Tour);
+exports.createTour = factory.createOne(Tour);
 // exports.createTour = catchAsync(async (req, res, next) => {
 //   // console.log(req.body);
 //   //   const newId = tours[tours.length - 1].id + 1;
@@ -143,7 +143,7 @@ exports.createTour=factory.createOne(Tour);
 //   //M02: to create doc
 
 //   //console.log(req.body);
-  
+
 //   // try{
 //     const newTour = await Tour.create(req.body);
 //   res.status(201).json({
@@ -163,7 +163,7 @@ exports.createTour=factory.createOne(Tour);
 //=======================================
 
 // ROUTE: -GET /api/v1/tours/:id
-exports.getTour=factory.getOne(Tour,{path:'reviews'});
+exports.getTour = factory.getOne(Tour, { path: 'reviews' });
 // exports.getTour = catchAsync(async (req, res,next) => {
 //   // console.log(req.params);
 //   // try {
@@ -230,7 +230,7 @@ exports.aliasTopExpensiveTours = (req, res, next) => {
 //   //   });
 //   // }
 // });
-exports.updateTour=factory.updateOne(Tour);
+exports.updateTour = factory.updateOne(Tour);
 //================================================
 
 // ROUTE : -DELETE /api/v1/tours/:id
@@ -244,46 +244,46 @@ exports.updateTour=factory.updateOne(Tour);
 //     data: null,
 //   });
 // });
-//NEW EXPORTS 
-exports.deleteTour=factory.deleteOne(Tour);
+//NEW EXPORTS
+exports.deleteTour = factory.deleteOne(Tour);
 
 //STATISTICS ROUTES
-exports.getTourStats = catchAsync(async (req, res,next) => {
+exports.getTourStats = catchAsync(async (req, res, next) => {
   // try {
-    const stats = await Tour.aggregate([
-      {
-        $match: { ratingsAverage: { $gte: 4.5 } },
+  const stats = await Tour.aggregate([
+    {
+      $match: { ratingsAverage: { $gte: 4.5 } },
+    },
+    {
+      $group: {
+        //_id: '$difficulty', to group by easy || medium || difficult
+        //_id:'$ratingsAverage', to group by ratingsAverage
+        _id: { $toUpper: '$difficulty' }, //it will set EASY || MEDIUM || DIFFICULT into uppercase char
+        //_id:null,
+        numTours: { $sum: 1 },
+        avgRating: { $avg: '$ratingsAverage' },
+        numRatings: { $sum: '$ratingsQuantity' },
+        avgPrice: { $avg: '$price' },
+        minPrice: { $min: '$price' },
+        maxPrice: { $max: '$price' },
       },
-      {
-        $group: {
-          //_id: '$difficulty', to group by easy || medium || difficult
-          //_id:'$ratingsAverage', to group by ratingsAverage
-          _id: { $toUpper: '$difficulty' }, //it will set EASY || MEDIUM || DIFFICULT into uppercase char
-          //_id:null,
-          numTours: { $sum: 1 },
-          avgRating: { $avg: '$ratingsAverage' },
-          numRatings: { $sum: '$ratingsQuantity' },
-          avgPrice: { $avg: '$price' },
-          minPrice: { $min: '$price' },
-          maxPrice: { $max: '$price' },
-        },
+    },
+    {
+      $sort: {
+        avgPrice: 1,
       },
-      {
-        $sort: {
-          avgPrice: 1,
-        },
-      },
-      // {
-      //   //$match:{_id:{$ne:'EASY'}}  //remove the EASY ones in the final result
-      // }
-    ]);
+    },
+    // {
+    //   //$match:{_id:{$ne:'EASY'}}  //remove the EASY ones in the final result
+    // }
+  ]);
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        stats,
-      },
-    });
+  res.status(200).json({
+    status: 'success',
+    data: {
+      stats,
+    },
+  });
   // } catch (error) {
   //   res.status(404).json({
   //     status: 'fails',
@@ -293,52 +293,52 @@ exports.getTourStats = catchAsync(async (req, res,next) => {
 });
 
 //Write a function to find busiest months as per given tours
-exports.getMonthlyPlan = catchAsync(async (req, res,next) => {
+exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
   // try {
-    console.log(req.params.y);
-    const year = req.params.year * 1;
-    console.log(year);
-    const plan = await Tour.aggregate([
-      {
-        $unwind: '$startDates',
-      },
-      {
-        $match: {
-          startDates: {
-            $gte: new Date(`${year}-01-01`),
-            $lte: new Date(`${year}-12-31`),
-          },
+  console.log(req.params.y);
+  const year = req.params.year * 1;
+  console.log(year);
+  const plan = await Tour.aggregate([
+    {
+      $unwind: '$startDates',
+    },
+    {
+      $match: {
+        startDates: {
+          $gte: new Date(`${year}-01-01`),
+          $lte: new Date(`${year}-12-31`),
         },
       },
-      {
-        $group: {
-          _id: { $month: '$startDates' },
-          numToursStats: { $sum: 1 },
-          tours: { $push: '$name' },
-        },
+    },
+    {
+      $group: {
+        _id: { $month: '$startDates' },
+        numToursStats: { $sum: 1 },
+        tours: { $push: '$name' },
       },
-      {
-        $addFields: { month: '$_id' },
+    },
+    {
+      $addFields: { month: '$_id' },
+    },
+    {
+      $project: {
+        _id: 0,
       },
-      {
-        $project: {
-          _id: 0,
-        },
-      },
-      {
-        $sort: { numToursStats: -1 },
-      },
-      {
-        $limit: 5,
-      },
-    ]);
-    res.status(200).json({
-      status: 'success',
-      count: plan.length,
-      data: {
-        plan,
-      },
-    });
+    },
+    {
+      $sort: { numToursStats: -1 },
+    },
+    {
+      $limit: 5,
+    },
+  ]);
+  res.status(200).json({
+    status: 'success',
+    count: plan.length,
+    data: {
+      plan,
+    },
+  });
   // } catch (error) {
   //   res.status(404).json({
   //     status: 'failed',
@@ -346,4 +346,72 @@ exports.getMonthlyPlan = catchAsync(async (req, res,next) => {
   //     message: error.message,
   //   });
   // }
+});
+
+//GET TOURS WITHIN
+// '/tours-within/:distance/center/:latlng/unit/:unit'
+// '/tours-within/1256/center/25.31843508576376, 82.97703271762028/unit/mi'
+exports.getToursWithin = async (req, res, next) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+  const radius = unit == 'mi' ? distance / 3963.2 : distance / 6378.1;
+  console.log(req.params);
+
+  if (!lat || !lng) {
+    next(
+      new AppError(
+        'plzz provide latitudes and longitudes in format -35.5555,-698.2555'
+      )
+    );
+  }
+  console.log(distance, lat, lng, unit);
+
+  const tours = await Tour.find({
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
+  });
+  res.status(200).json({
+    status: 'success',
+    results: tours.length,
+    data: tours,
+  });
+};
+
+// '/distances/:latlng/unit/:unit'
+exports.getDistances = catchAsync(async (req, res, next) => {
+  const { latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+
+  const multiplier = unit == 'mi' ? 0.000621371 : 0.001;
+
+  if (!lat || !lng) {
+    next(
+      new AppError(
+        'plzz provide latitudes and longitudes in format -35.5555,-698.2555'
+      )
+    );
+  }
+  const distances = await Tour.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [lng * 1, lat * 1],
+        },
+        distanceField: 'distance',
+        distanceMultiplier: multiplier,
+      },
+    },
+    {
+      $project: {
+        distance: 1,
+        name:1
+      },
+    },
+  ]);
+  const distArray = distances.map((tour) => tour.distance);
+  res.status(200).json({
+    status: 'success',
+    distanceArray: distArray,
+    data: distances,
+  });
 });

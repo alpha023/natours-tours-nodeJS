@@ -44,6 +44,13 @@ router
     tourController.getMonthlyPlan
   );
 router
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(tourController.getToursWithin);
+//optional way of above using a query string
+//tours-distance?distance=233&center=40&unit=mi
+
+router.route('/distances/:latlng/unit/:unit').get(tourController.getDistances);
+router
   .route('/')
   .get(tourController.getAllTours)
   .post(
